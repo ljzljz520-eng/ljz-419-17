@@ -33,6 +33,22 @@
       ]
     },
     {
+      "id": "profile-service-http",
+      "name": "profile-service",
+      "address": "profile-service",
+      "port": 8000,
+      "tags": ["http", "api", "demo"],
+      "checks": [
+        {
+          "id": "profile-service-http-health",
+          "name": "profile-service /health",
+          "http": "http://profile-service:8000/health",
+          "interval": "10s",
+          "timeout": "3s"
+        }
+      ]
+    },
+    {
       "id": "kong-1-proxy",
       "name": "kong-proxy",
       "address": "kong-1",

@@ -1,0 +1,24 @@
+# FastAPI 核心依赖
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+
+# 认证（与 user-service 共享 JWT 密钥，本地校验令牌）
+python-jose[cryptography]==3.3.0
+
+# 数据验证
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# 日志
+structlog==24.1.0
+
+# 监控
+prometheus-client==0.19.0
+prometheus-fastapi-instrumentator==6.1.0
+
+# HTTP 客户端（服务间调用 user-service）
+httpx==0.26.0
+
+# 测试依赖
+pytest==7.4.4
+pytest-asyncio==0.23.3

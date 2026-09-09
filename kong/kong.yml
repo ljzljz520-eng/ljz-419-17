@@ -32,6 +32,20 @@ upstreams:
       - target: user-service-replica:8000
         weight: 100
 
+  - name: profile-service-upstream
+    algorithm: round-robin
+    healthchecks:
+      passive:
+        healthy:
+          successes: 2
+        unhealthy:
+          tcp_failures: 2
+          timeouts: 2
+          http_failures: 2
+    targets:
+      - target: profile-service:8000
+        weight: 100
+
 # 服务定义
 services:
   # 用户服务
@@ -65,6 +79,50 @@ services:
           - GET
         strip_path: false
     # 服务级别插件
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - PATCH
+            - OPTIONS
+          headers:
+            - Accept
+            - Authorization
+            - Content-Type
+            - X-Request-ID
+          exposed_headers:
+            - X-Request-ID
+          credentials: true
+          max_age: 3600
+
+  # 资料服务（服务间调用示例）
+  - name: profile-service
+    host: profile-service-upstream
+    port: 8000
+    protocol: http
+    connect_timeout: 60000
+    write_timeout: 60000
+    read_timeout: 60000
+    retries: 2
+    routes:
+      - name: profile-service-api
+        paths:
+          - /api/v1/profiles
+        methods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - PATCH
+          - OPTIONS
+        strip_path: false
+        preserve_host: true
     plugins:
       - name: cors
         config:

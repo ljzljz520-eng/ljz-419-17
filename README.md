@@ -44,6 +44,53 @@
   - PostgreSQL exporter
 - Grafana 预置 Prometheus 数据源。
 
+## 🔗 服务间调用示例：资料服务（profile-service）
+
+`profile-service` 是一个刻意保持轻量的示例服务（FastAPI + 内存存储，无数据库），
+用于演示微服务间调用与**调用失败降级**：
+
+- **user-service**：用户基本信息（用户名、邮箱、昵称、手机号、简介、角色）
+- **profile-service**：扩展资料（头像、部门、岗位），启动时按用户名预置演示数据
+- 前端「资料详情」页（`/profile-detail`）通过 Kong 并行请求两个服务，合并展示
+
+### 调用链
+
+1. 前端带 JWT 请求 `GET /api/v1/profiles/me`（经 Kong 路由到 profile-service）。
+2. profile-service 用与 user-service 共享的 `JWT_SECRET_KEY` 本地验签，拿到用户身份。
+3. profile-service 通过 httpx **携带原 JWT** 调用 user-service
+   `GET /api/v1/auth/me`（容器内地址 `http://user-service:8000`，2s 超时）。
+4. 合并 user-service 的基本信息与本地的头像/部门/岗位后返回
+   （`data.user` + `data.profile` + `data.degraded`）。
+
+### 降级行为（不让页面空白）
+
+- user-service 不可用 / 超时：profile-service 仍返回 **200**，`degraded=true`，
+  用令牌中的身份给出基本字段，头像/部门/岗位照常展示，并在 `warnings` 中说明。
+- profile-service 自身不可用：前端独立调用 user-service 仍能展示基本信息，
+  资料区域显示"不可用"提示。
+- 两个服务都不可用：页面显示错误结果页与"重新加载"按钮，而不是白屏。
+
+### 手动演示降级
+
+页面底部「降级演示」面板可一键注入故障，也可直接调接口：
+
+```bash
+# 模拟 profile-service 调用 user-service 失败
+curl -X PUT "http://localhost:8012/api/v1/profiles/demo/faults/upstream?failed=true"
+# 模拟 profile-service 自身故障（业务接口返回 503）
+curl -X PUT "http://localhost:8012/api/v1/profiles/demo/faults/self?failed=true"
+# 清除故障
+curl -X DELETE "http://localhost:8012/api/v1/profiles/demo/faults"
+```
+
+资料服务测试：
+
+```bash
+cd services/profile-service
+pip install -r requirements.txt
+pytest tests/ -v
+```
+
 ## 🚀 启动
 
 ```bash
@@ -65,6 +112,7 @@ docker compose ps
 | User Service #2 (HTTP) | http://localhost:8011/docs | 副本 |
 | User Service #1 (gRPC TLS) | localhost:50051 | gRPC |
 | User Service #2 (gRPC TLS) | localhost:50052 | gRPC 副本 |
+| Profile Service (HTTP) | http://localhost:8012/docs | 资料服务（服务间调用示例） |
 | PostgreSQL Pgpool #1 | localhost:5432 | DB 入口 1 |
 | PostgreSQL Pgpool #2 | localhost:5433 | DB 入口 2 |
 | Consul UI | http://localhost:8500 | 服务发现/配置 |
@@ -101,6 +149,8 @@ docker compose ps
 ├── services/user-service/
 │   ├── app/
 │   └── certs/                 # 开发用 TLS/mTLS 证书（示例）
+├── services/profile-service/  # 资料服务（服务间调用 + 降级示例，内存存储）
+│   └── app/
 └── frontend/
 ```
 

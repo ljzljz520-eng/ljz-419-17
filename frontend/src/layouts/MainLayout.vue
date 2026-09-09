@@ -32,6 +32,11 @@
           <el-icon><UserFilled /></el-icon>
           <template #title>个人中心</template>
         </el-menu-item>
+
+        <el-menu-item index="/profile-detail">
+          <el-icon><Connection /></el-icon>
+          <template #title>资料详情</template>
+        </el-menu-item>
       </el-menu>
       
       <div class="sidebar-footer">

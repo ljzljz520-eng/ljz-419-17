@@ -90,7 +90,8 @@ export const useUserStore = defineStore('user', () => {
     }
 
     // 初始化 - 如果有 token 则获取用户信息
-    if (accessToken.value) {
+    // 资料详情页自行用 allSettled 拉取并做内联降级，跳过避免全局错误弹窗与重复请求
+    if (accessToken.value && !window.location.pathname.startsWith('/profile-detail')) {
         fetchCurrentUser()
     }
 
