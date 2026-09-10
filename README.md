@@ -46,11 +46,13 @@
 
 ## 🔗 服务间调用示例：资料服务（profile-service）
 
-`profile-service` 是一个刻意保持轻量的示例服务（FastAPI + 内存存储，无数据库），
+`profile-service` 是一个刻意保持轻量的示例服务（FastAPI + 内存存储 + JSON 快照持久化，无数据库），
 用于演示微服务间调用与**调用失败降级**：
 
 - **user-service**：用户基本信息（用户名、邮箱、昵称、手机号、简介、角色）
-- **profile-service**：扩展资料（头像、部门、岗位），启动时按用户名预置演示数据
+- **profile-service**：扩展资料（头像、部门、岗位），启动时按用户名预置演示数据；
+  修改写穿透到 JSON 快照（`PROFILE_STORE_PATH`，Compose 中挂载 `profile_data` 卷），
+  容器重启后自动恢复；资料字段支持显式传 `null` 清空
 - 前端「资料详情」页（`/profile-detail`）通过 Kong 并行请求两个服务，合并展示
 
 ### 调用链
@@ -149,7 +151,7 @@ docker compose ps
 ├── services/user-service/
 │   ├── app/
 │   └── certs/                 # 开发用 TLS/mTLS 证书（示例）
-├── services/profile-service/  # 资料服务（服务间调用 + 降级示例，内存存储）
+├── services/profile-service/  # 资料服务（服务间调用 + 降级示例，内存 + JSON 快照持久化）
 │   └── app/
 └── frontend/
 ```

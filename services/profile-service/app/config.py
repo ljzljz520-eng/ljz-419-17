@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     USER_SERVICE_URL: str = "http://user-service:8000"
     USER_SERVICE_TIMEOUT_SECONDS: float = 2.0
 
+    # 资料快照持久化文件路径（JSON 快照，重启后恢复；空字符串表示纯内存模式）
+    PROFILE_STORE_PATH: str = "./data/profiles.json"
+
 
 @lru_cache()
 def get_settings() -> Settings:

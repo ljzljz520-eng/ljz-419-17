@@ -136,6 +136,49 @@ def test_update_profile_partial(client, auth_headers):
     assert data["profile"]["department"] == "研发部"
 
 
+def test_update_profile_clear_fields_with_null(client, auth_headers):
+    """显式传 null 应清空部门/岗位/头像（修复：此前 null 被当作"不修改"）"""
+    # 先设置非空值
+    client.put(
+        f"{API}/me",
+        headers=auth_headers,
+        json={"department": "研发部", "position": "后端工程师", "avatar": "https://example.com/a.png"},
+    )
+    # 再显式传 null 清空
+    resp = client.put(
+        f"{API}/me",
+        headers=auth_headers,
+        json={"department": None, "position": None, "avatar": None},
+    )
+    assert resp.status_code == 200
+    data = resp.json()["data"]
+    assert data["department"] is None
+    assert data["position"] is None
+    assert data["avatar"] is None
+
+    # 再读一次确认已清空，种子值不会复活
+    demo_faults.set_upstream_fail(True)
+    resp = client.get(f"{API}/me", headers=auth_headers)
+    profile = resp.json()["data"]["profile"]
+    assert profile["department"] is None
+    assert profile["position"] is None
+    assert profile["avatar"] is None
+
+
+def test_update_profile_clear_keeps_unprovided_fields(client, auth_headers):
+    """只清空岗位时，未提供的部门字段保持原值（部分更新语义）"""
+    client.put(
+        f"{API}/me",
+        headers=auth_headers,
+        json={"department": "平台工程部", "position": "架构师"},
+    )
+    resp = client.put(f"{API}/me", headers=auth_headers, json={"position": None})
+    assert resp.status_code == 200
+    data = resp.json()["data"]
+    assert data["position"] is None
+    assert data["department"] == "平台工程部"
+
+
 def test_update_profile_validation(client, auth_headers):
     resp = client.put(
         f"{API}/me",

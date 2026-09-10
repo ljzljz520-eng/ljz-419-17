@@ -78,3 +78,6 @@ htmlcov/
 # Build outputs
 *.jar
 target/
+
+# profile-service 本地运行时的资料快照
+services/profile-service/data/

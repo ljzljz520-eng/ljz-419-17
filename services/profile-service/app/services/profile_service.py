@@ -79,13 +79,15 @@ async def get_merged_profile(principal: TokenPrincipal, authorization: str) -> d
 
 
 def update_my_profile(principal: TokenPrincipal, payload: ProfileUpdate) -> dict:
-    """更新当前用户的资料字段"""
+    """更新当前用户的资料字段
+
+    仅更新请求体中显式出现的字段：未提供的字段保持原值，
+    显式传 null 的字段会被清空（前端清空输入框即发送 null）。
+    """
     # 先确保资料记录存在（保留种子部门/岗位），再做局部更新
     profile_store.get_or_create(user_id=principal.user_id, username=principal.username)
     record = profile_store.update(
         user_id=principal.user_id,
-        avatar=payload.avatar,
-        department=payload.department,
-        position=payload.position,
+        **payload.model_dump(exclude_unset=True),
     )
     return record.to_dict()

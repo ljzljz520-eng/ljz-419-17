@@ -35,6 +35,7 @@ x-profile-service-env: &profile-service-env
   LOG_LEVEL: ${LOG_LEVEL:-INFO}
   USER_SERVICE_URL: http://user-service:8000
   USER_SERVICE_TIMEOUT_SECONDS: "2"
+  PROFILE_STORE_PATH: /data/profiles.json
   TZ: ${TZ:-Asia/Shanghai}
 
 x-kong-env: &kong-env
@@ -314,6 +315,9 @@ services:
     environment: *profile-service-env
     ports:
       - "8012:8000"
+    volumes:
+      # 资料 JSON 快照持久化：容器重启后保留用户修改
+      - profile_data:/data
     depends_on:
       user-service:
         condition: service_healthy
@@ -450,6 +454,8 @@ volumes:
     name: enterprise-postgres-primary-data
   postgres_replica_data:
     name: enterprise-postgres-replica-data
+  profile_data:
+    name: enterprise-profile-data
   prometheus_data:
     name: enterprise-prometheus-data
   grafana_data:
